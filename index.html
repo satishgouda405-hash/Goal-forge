@@ -2039,70 +2039,53 @@ function confirmReset() {
 
 // ── BOOT ─────────────────────────────────────────────────────────────
 window.onload = () => {
-  load();
-  if (state.setup) {
-    document.getElementById('onboard').classList.remove('active');
-    document.getElementById('app').classList.add('active');
-    checkStreak();
-    updateAll();
-    scheduleAll();
-    requestNotifPermission();
-  } else {
-    document.getElementById('ob_start').value = todayStr();
-    const end = new Date();
-    end.setFullYear(end.getFullYear() + 2);
-    document.getElementById('ob_end').value = end.toISOString().split('T')[0];
+  try {
+    load();
+  } catch(e) {
+    console.warn('Load error:', e);
+    state = {
+      setup: false, name: '', goal: '', category: '💰 Wealth',
+      startDate: '', endDate: '', why: '',
+      alarmTime: '06:00', checkinOn: true,
+      habits: [], habitLogs: {}, reminders: [], milestones: [],
+      journal: [], streak: 0, lastActiveDate: '', quoteIndex: 0,
+    };
   }
-  setInterval(() => { updateHome(); checkStreak(); }, 60000);
+  try {
+    if (state.setup) {
+      document.getElementById('onboard').classList.remove('active');
+      document.getElementById('app').classList.add('active');
+      try { checkStreak(); } catch(e) {}
+      try { updateAll(); } catch(e) { console.warn('updateAll error:', e); }
+      try { scheduleAll(); } catch(e) {}
+      try { requestNotifPermission(); } catch(e) {}
+    } else {
+      document.getElementById('ob_start').value = todayStr();
+      const end = new Date();
+      end.setFullYear(end.getFullYear() + 2);
+      document.getElementById('ob_end').value = end.toISOString().split('T')[0];
+    }
+  } catch(e) {
+    console.error('Boot error:', e);
+    // Force show onboarding if something broke
+    try {
+      localStorage.removeItem('goalforge_v2');
+      document.getElementById('onboard').classList.add('active');
+      document.getElementById('app').classList.remove('active');
+    } catch(e2) {}
+  }
+  try { setInterval(() => { try { updateHome(); checkStreak(); } catch(e){} }, 60000); } catch(e) {}
 };
 </script>
 <script>
 // ── OFFLINE / PWA SUPPORT ─────────────────────────────────────────────
 // Register a Service Worker to cache the app for offline use.
 // On first online visit, the SW caches the page. After that it works offline.
+// Service Worker is registered via sw.js (see separate file)
 (function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  const swCode = `
-    const CACHE = 'goalforge-v2';
-    const APP_URL = self.location.href.replace('?sw=1','');
-
-    self.addEventListener('install', e => {
-      self.skipWaiting();
-      e.waitUntil(
-        caches.open(CACHE).then(cache => {
-          return fetch(APP_URL).then(r => cache.put(APP_URL, r)).catch(()=>{});
-        })
-      );
-    });
-
-    self.addEventListener('activate', e => {
-      e.waitUntil(
-        caches.keys().then(keys =>
-          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-        ).then(() => clients.claim())
-      );
-    });
-
-    self.addEventListener('fetch', e => {
-      if (!e.request.url.startsWith('http')) return;
-      e.respondWith(
-        caches.match(e.request).then(cached => {
-          if (cached) return cached;
-          return fetch(e.request).then(response => {
-            if (response.ok) {
-              const clone = response.clone();
-              caches.open(CACHE).then(c => c.put(e.request, clone));
-            }
-            return response;
-          }).catch(() => cached);
-        })
-      );
-    });
-  `;
   try {
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   } catch(e) {}
 })();
 </script>

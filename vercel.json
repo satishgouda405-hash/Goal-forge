@@ -1,10 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "goalforge.html", "use": "@vercel/static" }
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    }
   ],
   "routes": [
-    { "src": "/", "dest": "/goalforge.html" },
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/sw.js", "dest": "/sw.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
