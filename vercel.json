@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "goalforge.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/goalforge.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
